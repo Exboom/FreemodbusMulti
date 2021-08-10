@@ -38,6 +38,7 @@ PR_BEGIN_EXTERN_C
 
 #include "mbport.h"
 #include "mbproto.h"
+#include "mbframe.h"
 
 /*! \defgroup modbus Modbus
  * \code #include "mb.h" \endcode
@@ -120,8 +121,36 @@ typedef enum
     MB_ETIMEDOUT                /*!< timeout error occurred. */
 } eMBErrorCode;
 
+/* Modbus struct */
+typedef struct {
+    peMBFrameSend peMBFrameSendCur;
+    pvMBFrameStart pvMBFrameStartCur;
+    pvMBFrameStop pvMBFrameStopCur;
+    peMBFrameReceive peMBFrameReceiveCur;
+    pvMBFrameClose pvMBFrameCloseCur;
 
-/* ----------------------- Function prototypes ------------------------------*/
+    BOOL( *pxMBFrameCBByteReceived ) ( void );
+    BOOL( *pxMBFrameCBTransmitterEmpty ) ( void );
+    BOOL( *pxMBPortCBTimerExpired ) ( void );
+
+    UCHAR ucMBAddress;
+    eMBMode eMBCurrentMode;
+
+    USHORT ucTCPPort;
+    UCHAR ucSlaveAddress;
+    UCHAR ucPort;
+    ULONG ulBaudRate;
+    eMBParity eParity;
+
+    enum {
+        STATE_ENABLED,
+        STATE_DISABLED,
+        STATE_NOT_INITIALIZED
+    } eMBState = STATE_NOT_INITIALIZED;
+
+} modbus_t;
+
+/* ----------------------- Function prototypes ------------------------------*/                         
 /*! \ingroup modbus
  * \brief Initialize the Modbus protocol stack.
  *
@@ -147,8 +176,10 @@ typedef enum
  *        slave addresses are in the range 1 - 247.
  *    - eMBErrorCode::MB_EPORTERR IF the porting layer returned an error.
  */
-eMBErrorCode    eMBInit( eMBMode eMode, UCHAR ucSlaveAddress,
-                         UCHAR ucPort, ULONG ulBaudRate, eMBParity eParity );
+// eMBErrorCode    eMBInit( eMBMode eMode, UCHAR ucSlaveAddress,
+//                          UCHAR ucPort, ULONG ulBaudRate, eMBParity eParity );
+
+eMBErrorCode    eMBInit(modbus_t *dev);
 
 /*! \ingroup modbus
  * \brief Initialize the Modbus protocol stack for Modbus TCP.
@@ -180,7 +211,7 @@ eMBErrorCode    eMBTCPInit( USHORT usTCPPort );
  *   If the protocol stack is not in the disabled state it returns
  *   eMBErrorCode::MB_EILLSTATE.
  */
-eMBErrorCode    eMBClose( void );
+eMBErrorCode    eMBClose( modbus_t *dev  );
 
 /*! \ingroup modbus
  * \brief Enable the Modbus protocol stack.
@@ -192,7 +223,7 @@ eMBErrorCode    eMBClose( void );
  *   eMBErrorCode::MB_ENOERR. If it was not in the disabled state it 
  *   return eMBErrorCode::MB_EILLSTATE.
  */
-eMBErrorCode    eMBEnable( void );
+eMBErrorCode    eMBEnable( modbus_t *dev );
 
 /*! \ingroup modbus
  * \brief Disable the Modbus protocol stack.
@@ -203,7 +234,7 @@ eMBErrorCode    eMBEnable( void );
  *  eMBErrorCode::MB_ENOERR. If it was not in the enabled state it returns
  *  eMBErrorCode::MB_EILLSTATE.
  */
-eMBErrorCode    eMBDisable( void );
+eMBErrorCode    eMBDisable( modbus_t *dev  );
 
 /*! \ingroup modbus
  * \brief The main pooling loop of the Modbus protocol stack.

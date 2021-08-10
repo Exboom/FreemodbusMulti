@@ -37,7 +37,6 @@
 /* ----------------------- Modbus includes ----------------------------------*/
 #include "mb.h"
 #include "mbconfig.h"
-#include "mbframe.h"
 #include "mbproto.h"
 #include "mbfunc.h"
 
@@ -61,32 +60,37 @@
 static UCHAR    ucMBAddress;
 static eMBMode  eMBCurrentMode;
 
-static enum
-{
-    STATE_ENABLED,
-    STATE_DISABLED,
-    STATE_NOT_INITIALIZED
-} eMBState = STATE_NOT_INITIALIZED;
-
 /* Functions pointer which are initialized in eMBInit( ). Depending on the
  * mode (RTU or ASCII) the are set to the correct implementations.
  */
-static peMBFrameSend peMBFrameSendCur;
-static pvMBFrameStart pvMBFrameStartCur;
-static pvMBFrameStop pvMBFrameStopCur;
-static peMBFrameReceive peMBFrameReceiveCur;
-static pvMBFrameClose pvMBFrameCloseCur;
 
 /* Callback functions required by the porting layer. They are called when
  * an external event has happend which includes a timeout or the reception
  * or transmission of a character.
  */
-BOOL( *pxMBFrameCBByteReceived ) ( void );
-BOOL( *pxMBFrameCBTransmitterEmpty ) ( void );
-BOOL( *pxMBPortCBTimerExpired ) ( void );
 
-BOOL( *pxMBFrameCBReceiveFSMCur ) ( void );
-BOOL( *pxMBFrameCBTransmitFSMCur ) ( void );
+/* Init Modbus structures so as not to forget*/
+modbus_t mb_RTU {
+    .pvMBFrameStartCur = eMBRTUStart;
+    .pvMBFrameStopCur = eMBRTUStop;
+    .peMBFrameSendCur = eMBRTUSend;
+    .peMBFrameReceiveCur = eMBRTUReceive;
+    .pvMBFrameCloseCur = MB_PORT_HAS_CLOSE ? vMBPortClose : NULL;
+    .pxMBFrameCBByteReceived = xMBRTUReceiveFSM;
+    .pxMBFrameCBTransmitterEmpty = xMBRTUTransmitFSM;
+    .pxMBPortCBTimerExpired = xMBRTUTimerT35Expired;
+    .eMBCurrentMode = MB_RTU;
+};
+
+modbus_t mb_TCP {
+    .pvMBFrameStartCur = eMBTCPStart;
+    .pvMBFrameStopCur = eMBTCPStop;
+    .peMBFrameReceiveCur = eMBTCPReceive;
+    .peMBFrameSendCur = eMBTCPSend;
+    .pvMBFrameCloseCur = MB_PORT_HAS_CLOSE ? vMBTCPPortClose : NULL;
+    .ucMBAddress = MB_TCP_PSEUDO_ADDRESS;
+    .eMBCurrentMode = MB_TCP;
+};
 
 /* An array of Modbus functions handlers which associates Modbus function
  * codes with implementing functions.
@@ -126,100 +130,59 @@ static xMBFunctionHandler xFuncHandlers[MB_FUNC_HANDLERS_MAX] = {
 
 /* ----------------------- Start implementation -----------------------------*/
 eMBErrorCode
-eMBInit( eMBMode eMode, UCHAR ucSlaveAddress, UCHAR ucPort, ULONG ulBaudRate, eMBParity eParity )
-{
+eMBInit(modbus_t *dev) {
     eMBErrorCode    eStatus = MB_ENOERR;
 
-    /* check preconditions */
-    if( ( ucSlaveAddress == MB_ADDRESS_BROADCAST ) ||
-        ( ucSlaveAddress < MB_ADDRESS_MIN ) || ( ucSlaveAddress > MB_ADDRESS_MAX ) )
-    {
-        eStatus = MB_EINVAL;
-    }
-    else
-    {
-        ucMBAddress = ucSlaveAddress;
-
-        switch ( eMode )
-        {
-#if MB_RTU_ENABLED > 0
-        case MB_RTU:
-            pvMBFrameStartCur = eMBRTUStart;
-            pvMBFrameStopCur = eMBRTUStop;
-            peMBFrameSendCur = eMBRTUSend;
-            peMBFrameReceiveCur = eMBRTUReceive;
-            pvMBFrameCloseCur = MB_PORT_HAS_CLOSE ? vMBPortClose : NULL;
-            pxMBFrameCBByteReceived = xMBRTUReceiveFSM;
-            pxMBFrameCBTransmitterEmpty = xMBRTUTransmitFSM;
-            pxMBPortCBTimerExpired = xMBRTUTimerT35Expired;
-
-            eStatus = eMBRTUInit( ucMBAddress, ucPort, ulBaudRate, eParity );
-            break;
-#endif
-#if MB_ASCII_ENABLED > 0
-        case MB_ASCII:
-            pvMBFrameStartCur = eMBASCIIStart;
-            pvMBFrameStopCur = eMBASCIIStop;
-            peMBFrameSendCur = eMBASCIISend;
-            peMBFrameReceiveCur = eMBASCIIReceive;
-            pvMBFrameCloseCur = MB_PORT_HAS_CLOSE ? vMBPortClose : NULL;
-            pxMBFrameCBByteReceived = xMBASCIIReceiveFSM;
-            pxMBFrameCBTransmitterEmpty = xMBASCIITransmitFSM;
-            pxMBPortCBTimerExpired = xMBASCIITimerT1SExpired;
-
-            eStatus = eMBASCIIInit( ucMBAddress, ucPort, ulBaudRate, eParity );
-            break;
-#endif
-        default:
+    if (dev->eMBCurrentMode != MB_TCP) {
+        if ((dev->ucSlaveAddress == MB_ADDRESS_BROADCAST) ||
+            (dev->ucSlaveAddress < MB_ADDRESS_MIN) || (dev->ucSlaveAddress > MB_ADDRESS_MAX)) {
             eStatus = MB_EINVAL;
         }
+        else {
+            ucMBAddress = dev->ucSlaveAddress;
 
-        if( eStatus == MB_ENOERR )
-        {
-            if( !xMBPortEventInit(  ) )
-            {
-                /* port dependent event module initalization failed. */
-                eStatus = MB_EPORTERR;
+            switch (dev->eMBCurrentMode) {
+#if MB_RTU_ENABLED > 0
+            case MB_RTU:
+                eStatus = eMBRTUInit(ucMBAddress, dev->ucPort, dev->ulBaudRate, dev->eParity);
+                break;
+#endif
+#if MB_ASCII_ENABLED > 0
+            case MB_ASCII:
+                eStatus = eMBASCIIInit(ucMBAddress, dev->ucPort, dev->ulBaudRate, dev->eParity);
+                break;
+#endif
+            default:
+                eStatus = MB_EINVAL;
             }
-            else
+
+            if (eStatus == MB_ENOERR)
             {
-                eMBCurrentMode = eMode;
-                eMBState = STATE_DISABLED;
+                if (!xMBPortEventInit()) {
+                    /* port dependent event module initalization failed. */
+                    eStatus = MB_EPORTERR;
+                }
+                else {
+                    dev->eMBState = STATE_DISABLED;
+                }
             }
         }
-    }
-    return eStatus;
-}
-
+    } else if (dev->eMBCurrentMode == MB_TCP) {
 #if MB_TCP_ENABLED > 0
-eMBErrorCode
-eMBTCPInit( USHORT ucTCPPort )
-{
-    eMBErrorCode    eStatus = MB_ENOERR;
-
-    if( ( eStatus = eMBTCPDoInit( ucTCPPort ) ) != MB_ENOERR )
-    {
-        eMBState = STATE_DISABLED;
-    }
-    else if( !xMBPortEventInit(  ) )
-    {
-        /* Port dependent event module initalization failed. */
-        eStatus = MB_EPORTERR;
-    }
-    else
-    {
-        pvMBFrameStartCur = eMBTCPStart;
-        pvMBFrameStopCur = eMBTCPStop;
-        peMBFrameReceiveCur = eMBTCPReceive;
-        peMBFrameSendCur = eMBTCPSend;
-        pvMBFrameCloseCur = MB_PORT_HAS_CLOSE ? vMBTCPPortClose : NULL;
-        ucMBAddress = MB_TCP_PSEUDO_ADDRESS;
-        eMBCurrentMode = MB_TCP;
-        eMBState = STATE_DISABLED;
-    }
+        if ((eStatus = eMBTCPDoInit(dev->ucTCPPort)) != MB_ENOERR) {
+            dev->eMBState = STATE_DISABLED;
+        }
+        else if (!xMBPortEventInit()) {
+            /* Port dependent event module initalization failed. */
+            eStatus = MB_EPORTERR;
+        }
+        else {
+            dev->eMBState = STATE_DISABLED;
+        }
+ #endif       
+    } else eStatus = MB_EINVAL;
     return eStatus;
 }
-#endif
 
 eMBErrorCode
 eMBRegisterCB( UCHAR ucFunctionCode, pxMBFunctionHandler pxHandler )
@@ -267,17 +230,16 @@ eMBRegisterCB( UCHAR ucFunctionCode, pxMBFunctionHandler pxHandler )
     return eStatus;
 }
 
-
 eMBErrorCode
-eMBClose( void )
+eMBClose( modbus_t *dev  )
 {
     eMBErrorCode    eStatus = MB_ENOERR;
 
-    if( eMBState == STATE_DISABLED )
+    if (dev->eMBState == STATE_DISABLED)
     {
-        if( pvMBFrameCloseCur != NULL )
+        if( dev->pvMBFrameCloseCur != NULL )
         {
-            pvMBFrameCloseCur(  );
+            dev->pvMBFrameCloseCur;
         }
     }
     else
@@ -288,15 +250,15 @@ eMBClose( void )
 }
 
 eMBErrorCode
-eMBEnable( void )
+eMBEnable( modbus_t *dev )
 {
     eMBErrorCode    eStatus = MB_ENOERR;
 
-    if( eMBState == STATE_DISABLED )
+    if( dev->eMBState == STATE_DISABLED )
     {
         /* Activate the protocol stack. */
-        pvMBFrameStartCur(  );
-        eMBState = STATE_ENABLED;
+        dev->pvMBFrameStartCur;
+        dev->eMBState = STATE_ENABLED;
     }
     else
     {
@@ -306,17 +268,17 @@ eMBEnable( void )
 }
 
 eMBErrorCode
-eMBDisable( void )
+eMBDisable( modbus_t *dev )
 {
     eMBErrorCode    eStatus;
 
-    if( eMBState == STATE_ENABLED )
+    if( dev->eMBState == STATE_ENABLED )
     {
-        pvMBFrameStopCur(  );
-        eMBState = STATE_DISABLED;
+        dev->pvMBFrameStopCur;
+        dev->eMBState = STATE_DISABLED;
         eStatus = MB_ENOERR;
     }
-    else if( eMBState == STATE_DISABLED )
+    else if( dev->eMBState == STATE_DISABLED )
     {
         eStatus = MB_ENOERR;
     }
