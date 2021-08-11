@@ -61,9 +61,9 @@ typedef enum
 /* ----------------------- Supporting functions -----------------------------*/
 BOOL            xMBPortEventInit( void );
 
-BOOL            xMBPortEventPost( eMBEventType eEvent );
+BOOL            xMBPortEventPost( eMBEventType eEvent, eMBMode eType);
 
-BOOL            xMBPortEventGet(  /*@out@ */ eMBEventType * eEvent );
+BOOL            xMBPortEventGet(  /*@out@ */ eMBEventType * eEvent,  eMBMode * eType);
 
 /* ----------------------- Serial port functions ----------------------------*/
 

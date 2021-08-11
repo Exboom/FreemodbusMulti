@@ -123,25 +123,32 @@ typedef enum
 
 /* Modbus struct */
 typedef struct {
+
+    /* Use for RTU/TCP */
     peMBFrameSend peMBFrameSendCur;
     pvMBFrameStart pvMBFrameStartCur;
     pvMBFrameStop pvMBFrameStopCur;
     peMBFrameReceive peMBFrameReceiveCur;
     pvMBFrameClose pvMBFrameCloseCur;
-
-    BOOL( *pxMBFrameCBByteReceived ) ( void );
-    BOOL( *pxMBFrameCBTransmitterEmpty ) ( void );
-    BOOL( *pxMBPortCBTimerExpired ) ( void );
-
-    UCHAR ucMBAddress;
     eMBMode eMBCurrentMode;
 
-    USHORT ucTCPPort;
+    /* Use for RTU */
+    BOOL (*pxMBFrameCBByteReceived)
+    (void);
+    BOOL (*pxMBFrameCBTransmitterEmpty)
+    (void);
+    BOOL (*pxMBPortCBTimerExpired)
+    (void);
+
     UCHAR ucSlaveAddress;
     UCHAR ucPort;
     ULONG ulBaudRate;
     eMBParity eParity;
 
+    /* Use for TCP */
+    USHORT ucTCPPort;
+
+    /* Status info */
     enum {
         STATE_ENABLED,
         STATE_DISABLED,
@@ -248,7 +255,7 @@ eMBErrorCode    eMBDisable( modbus_t *dev  );
  *   returns eMBErrorCode::MB_EILLSTATE. Otherwise it returns 
  *   eMBErrorCode::MB_ENOERR.
  */
-eMBErrorCode    eMBPoll( void );
+eMBErrorCode    eMBPoll( modbus_t *rtu, modbus_t *tcp, modbus_t *ascii );
 
 /*! \ingroup modbus
  * \brief Configure the slave id of the device.

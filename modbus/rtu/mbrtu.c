@@ -307,7 +307,7 @@ xMBRTUTransmitFSM( void )
         }
         else
         {
-            xNeedPoll = xMBPortEventPost( EV_FRAME_SENT );
+            xNeedPoll = xMBPortEventPost( EV_FRAME_SENT, MB_RTU );
             /* Disable transmitter. This prevents another transmit buffer
              * empty interrupt. */
             vMBPortSerialEnable( TRUE, FALSE );
@@ -328,13 +328,13 @@ xMBRTUTimerT35Expired( void )
     {
         /* Timer t35 expired. Startup phase is finished. */
     case STATE_RX_INIT:
-        xNeedPoll = xMBPortEventPost( EV_READY );
+        xNeedPoll = xMBPortEventPost( EV_READY, MB_RTU );
         break;
 
         /* A frame was received and t35 expired. Notify the listener that
          * a new frame was received. */
     case STATE_RX_RCV:
-        xNeedPoll = xMBPortEventPost( EV_FRAME_RECEIVED );
+        xNeedPoll = xMBPortEventPost( EV_FRAME_RECEIVED, MB_RTU );
         break;
 
         /* An error occured while receiving the frame. */

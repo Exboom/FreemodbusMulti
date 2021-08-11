@@ -46,7 +46,7 @@ PR_BEGIN_EXTERN_C
  *  @{
  */
 /*! \brief If Modbus ASCII support is enabled. */
-#define MB_ASCII_ENABLED                        (  0 )
+#define MB_ASCII_ENABLED                        (  1 )
 
 /*! \brief If Modbus RTU support is enabled. */
 #define MB_RTU_ENABLED                          (  1 )
