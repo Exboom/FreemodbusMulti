@@ -66,6 +66,19 @@ PR_BEGIN_EXTERN_C
 #define MB_PDU_DATA_OFF     1   /*!< Offset for response data in PDU. */
 
 /* ----------------------- Prototypes  0-------------------------------------*/
+typedef enum
+{
+    MB_ENOERR,                  /*!< no error. */
+    MB_ENOREG,                  /*!< illegal register address. */
+    MB_EINVAL,                  /*!< illegal argument. */
+    MB_EPORTERR,                /*!< porting layer error. */
+    MB_ENORES,                  /*!< insufficient resources. */
+    MB_EIO,                     /*!< I/O error. */
+    MB_EILLSTATE,               /*!< protocol stack in illegal state. */
+    MB_ETIMEDOUT                /*!< timeout error occurred. */
+} eMBErrorCode;
+
+
 typedef void    ( *pvMBFrameStart ) ( void );
 
 typedef void    ( *pvMBFrameStop ) ( void );

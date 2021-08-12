@@ -69,25 +69,25 @@ static UCHAR    ucMBAddress;
  */
 
 /* Modbus structures (example). Structures should not be declared in this file*/
-modbus_t mb_RTU {
-    .pvMBFrameStartCur = eMBRTUStart;
-    .pvMBFrameStopCur = eMBRTUStop;
-    .peMBFrameSendCur = eMBRTUSend;
-    .peMBFrameReceiveCur = eMBRTUReceive;
-    .pvMBFrameCloseCur = MB_PORT_HAS_CLOSE ? vMBPortClose : NULL;
-    .pxMBFrameCBByteReceived = xMBRTUReceiveFSM;
-    .pxMBFrameCBTransmitterEmpty = xMBRTUTransmitFSM;
-    .pxMBPortCBTimerExpired = xMBRTUTimerT35Expired;
-    .eMBCurrentMode = MB_RTU;
+modbus_t mb_RTU = {
+    .pvMBFrameStartCur = eMBRTUStart,
+    .pvMBFrameStopCur = eMBRTUStop,
+    .peMBFrameSendCur = eMBRTUSend,
+    .peMBFrameReceiveCur = eMBRTUReceive,
+    .pvMBFrameCloseCur = MB_PORT_HAS_CLOSE ? vMBPortClose : NULL,
+    .pxMBFrameCBByteReceived = xMBRTUReceiveFSM,
+    .pxMBFrameCBTransmitterEmpty = xMBRTUTransmitFSM,
+    .pxMBPortCBTimerExpired = xMBRTUTimerT35Expired,
+    .eMBCurrentMode = MB_RTU
 };
 
-modbus_t mb_TCP {
-    .pvMBFrameStartCur = eMBTCPStart;
-    .pvMBFrameStopCur = eMBTCPStop;
-    .peMBFrameReceiveCur = eMBTCPReceive;
-    .peMBFrameSendCur = eMBTCPSend;
-    .pvMBFrameCloseCur = MB_PORT_HAS_CLOSE ? vMBTCPPortClose : NULL;
-    .eMBCurrentMode = MB_TCP;
+modbus_t mb_TCP = {
+    .pvMBFrameStartCur = eMBTCPStart,
+    .pvMBFrameStopCur = eMBTCPStop,
+    .peMBFrameReceiveCur = eMBTCPReceive,
+    .peMBFrameSendCur = eMBTCPSend,
+    .pvMBFrameCloseCur = MB_PORT_HAS_CLOSE ? vMBTCPPortClose : NULL,
+    .eMBCurrentMode = MB_TCP
 };
 
 /* An array of Modbus functions handlers which associates Modbus function
@@ -355,6 +355,7 @@ eMBPoll(modbus_t *rtu, modbus_t *tcp, modbus_t *ascii) {
                 break;
 #endif
             }
+            break;
         case EV_EXECUTE:
             ucFunctionCode = ucMBFrame[MB_PDU_FUNC_OFF];
             eException = MB_EX_ILLEGAL_FUNCTION;

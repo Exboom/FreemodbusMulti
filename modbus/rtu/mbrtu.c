@@ -37,7 +37,6 @@
 /* ----------------------- Modbus includes ----------------------------------*/
 #include "mb.h"
 #include "mbrtu.h"
-#include "mbframe.h"
 
 #include "mbcrc.h"
 #include "mbport.h"

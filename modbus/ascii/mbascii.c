@@ -38,7 +38,6 @@
 #include "mb.h"
 #include "mbconfig.h"
 #include "mbascii.h"
-#include "mbframe.h"
 
 #include "mbcrc.h"
 #include "mbport.h"

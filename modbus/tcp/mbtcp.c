@@ -38,7 +38,6 @@
 #include "mb.h"
 #include "mbconfig.h"
 #include "mbtcp.h"
-#include "mbframe.h"
 #include "mbport.h"
 
 #if MB_TCP_ENABLED > 0

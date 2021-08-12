@@ -21,7 +21,7 @@
 
 /* ----------------------- Modbus includes ----------------------------------*/
 #include "mb.h"
-#include "mbport.h"
+// #include "mbport.h"
 
 /* ----------------------- Variables ----------------------------------------*/
 static eMBEventType eQueuedEvent;

@@ -35,6 +35,19 @@ PR_BEGIN_EXTERN_C
 #endif
 
 /* ----------------------- Type definitions ---------------------------------*/
+/*! \ingroup modbus
+ * \brief Modbus serial transmission modes (RTU/ASCII).
+ *
+ * Modbus serial supports two transmission modes. Either ASCII or RTU. RTU
+ * is faster but has more hardware requirements and requires a network with
+ * a low jitter. ASCII is slower and more reliable on slower links (E.g. modems)
+ */
+typedef enum 
+{
+    MB_RTU,   /*!< RTU transmission mode. */
+    MB_ASCII, /*!< ASCII transmission mode. */
+    MB_TCP    /*!< TCP mode. */
+} eMBMode;
 
 typedef enum
 {
