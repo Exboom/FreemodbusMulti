@@ -39,6 +39,7 @@ PR_BEGIN_EXTERN_C
 #include "mbport.h"
 #include "mbproto.h"
 #include "mbframe.h"
+#include "mb_typedef.h"
 
 /*! \defgroup modbus Modbus
  * \code #include "mb.h" \endcode
@@ -76,20 +77,6 @@ PR_BEGIN_EXTERN_C
 /* ----------------------- Type definitions ---------------------------------*/
 
 /*! \ingroup modbus
- * \brief Modbus serial transmission modes (RTU/ASCII).
- *
- * Modbus serial supports two transmission modes. Either ASCII or RTU. RTU
- * is faster but has more hardware requirements and requires a network with
- * a low jitter. ASCII is slower and more reliable on slower links (E.g. modems)
- */
-// typedef enum 
-// {
-//     MB_RTU,   /*!< RTU transmission mode. */
-//     MB_ASCII, /*!< ASCII transmission mode. */
-//     MB_TCP    /*!< TCP mode. */
-// } eMBMode;
-
-/*! \ingroup modbus
  * \brief If register should be written or read.
  *
  * This value is passed to the callback functions which support either
@@ -106,24 +93,8 @@ typedef enum
     MB_REG_WRITE                /*!< Update register values. */
 } eMBRegisterMode;
 
-/*! \ingroup modbus
- * \brief Errorcodes used by all function in the protocol stack.
- */
-// typedef enum
-// {
-//     MB_ENOERR,                  /*!< no error. */
-//     MB_ENOREG,                  /*!< illegal register address. */
-//     MB_EINVAL,                  /*!< illegal argument. */
-//     MB_EPORTERR,                /*!< porting layer error. */
-//     MB_ENORES,                  /*!< insufficient resources. */
-//     MB_EIO,                     /*!< I/O error. */
-//     MB_EILLSTATE,               /*!< protocol stack in illegal state. */
-//     MB_ETIMEDOUT                /*!< timeout error occurred. */
-// } eMBErrorCode;
-
 /* Modbus struct */
 typedef struct modbus {
-
     /* Use for RTU/TCP */
     peMBFrameSend peMBFrameSendCur;
     pvMBFrameStart pvMBFrameStartCur;
@@ -133,13 +104,6 @@ typedef struct modbus {
     eMBMode eMBCurrentMode;
 
     /* Use for RTU */
-    BOOL (*pxMBFrameCBByteReceived)
-    (void);
-    BOOL (*pxMBFrameCBTransmitterEmpty)
-    (void);
-    BOOL (*pxMBPortCBTimerExpired)
-    (void);
-
     UCHAR ucSlaveAddress;
     UCHAR ucPort;
     ULONG ulBaudRate;
@@ -149,12 +113,7 @@ typedef struct modbus {
     USHORT ucTCPPort;
 
     /* Status info */
-    enum {
-        STATE_ENABLED,
-        STATE_DISABLED,
-        STATE_NOT_INITIALIZED
-    } eMBState;
-
+    eMBState mbStatus;
 } modbus_t;
 
 /* ----------------------- Function prototypes ------------------------------*/                         
@@ -186,7 +145,7 @@ typedef struct modbus {
 // eMBErrorCode    eMBInit( eMBMode eMode, UCHAR ucSlaveAddress,
 //                          UCHAR ucPort, ULONG ulBaudRate, eMBParity eParity );
 
-eMBErrorCode    eMBInit(modbus_t *dev);
+eMBErrorCode    eMBInit(modbus_t * dev);
 
 /*! \ingroup modbus
  * \brief Initialize the Modbus protocol stack for Modbus TCP.
@@ -218,7 +177,7 @@ eMBErrorCode    eMBTCPInit( USHORT usTCPPort );
  *   If the protocol stack is not in the disabled state it returns
  *   eMBErrorCode::MB_EILLSTATE.
  */
-eMBErrorCode    eMBClose( modbus_t *dev  );
+eMBErrorCode    eMBClose( modbus_t * dev  );
 
 /*! \ingroup modbus
  * \brief Enable the Modbus protocol stack.
@@ -230,7 +189,7 @@ eMBErrorCode    eMBClose( modbus_t *dev  );
  *   eMBErrorCode::MB_ENOERR. If it was not in the disabled state it 
  *   return eMBErrorCode::MB_EILLSTATE.
  */
-eMBErrorCode    eMBEnable( modbus_t *dev );
+eMBErrorCode    eMBEnable( modbus_t * dev );
 
 /*! \ingroup modbus
  * \brief Disable the Modbus protocol stack.
@@ -241,7 +200,7 @@ eMBErrorCode    eMBEnable( modbus_t *dev );
  *  eMBErrorCode::MB_ENOERR. If it was not in the enabled state it returns
  *  eMBErrorCode::MB_EILLSTATE.
  */
-eMBErrorCode    eMBDisable( modbus_t *dev  );
+eMBErrorCode    eMBDisable( modbus_t * dev  );
 
 /*! \ingroup modbus
  * \brief The main pooling loop of the Modbus protocol stack.
@@ -255,7 +214,7 @@ eMBErrorCode    eMBDisable( modbus_t *dev  );
  *   returns eMBErrorCode::MB_EILLSTATE. Otherwise it returns 
  *   eMBErrorCode::MB_ENOERR.
  */
-eMBErrorCode    eMBPoll( modbus_t *rtu, modbus_t *tcp, modbus_t *ascii );
+eMBErrorCode    eMBPoll( modbus_t rtu, modbus_t tcp, ... );
 
 /*! \ingroup modbus
  * \brief Configure the slave id of the device.
