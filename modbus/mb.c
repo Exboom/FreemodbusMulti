@@ -82,7 +82,7 @@ modbus_t mb_RTU = {
     .ucSlaveAddress = 1,
     .ucPort = 1,
     .ulBaudRate = 9600,
-    .eParity = 0,
+    .eParity = MB_PAR_NONE,
     .mbStatus = STATE_NOT_INITIALIZED
 };
 
@@ -180,7 +180,7 @@ eMBInit(modbus_t * dev) {
             }
         }
     }
-    if (dev->eMBCurrentMode == MB_TCP) {
+    else if (dev->eMBCurrentMode == MB_TCP) {
 #if MB_TCP_ENABLED > 0
         if ((eStatus = eMBTCPDoInit(dev->ucTCPPort)) != MB_ENOERR) {
             dev->mbStatus = STATE_DISABLED;
@@ -252,7 +252,7 @@ eMBClose( modbus_t * dev  )
     {
         if( dev->pvMBFrameCloseCur != NULL )
         {
-            dev->pvMBFrameCloseCur;
+            dev->pvMBFrameCloseCur();
         }
     }
     else
@@ -270,7 +270,7 @@ eMBEnable( modbus_t * dev )
     if( dev->mbStatus == STATE_DISABLED )
     {
         /* Activate the protocol stack. */
-        dev->pvMBFrameStartCur;
+        dev->pvMBFrameStartCur();
         dev->mbStatus = STATE_ENABLED;
     }
     else
@@ -287,7 +287,7 @@ eMBDisable( modbus_t * dev )
 
     if( dev->mbStatus == STATE_ENABLED )
     {
-        dev->pvMBFrameStopCur;
+        dev->pvMBFrameStopCur();
         dev->mbStatus = STATE_DISABLED;
         eStatus = MB_ENOERR;
     }
